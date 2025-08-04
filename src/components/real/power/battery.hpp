@@ -6,16 +6,18 @@
 #ifndef S2E_COMPONENTS_REAL_POWER_BATTERY_HPP_P_
 #define S2E_COMPONENTS_REAL_POWER_BATTERY_HPP_P_
 
-#include <library/logger/loggable.hpp>
+#include <logger/loggable.hpp>
 #include <vector>
 
 #include "../../base/component.hpp"
+
+namespace s2e::components {
 
 /*
  * @class Battery
  * @brief Component emulation of battery
  */
-class Battery : public Component, public ILoggable {
+class Battery : public Component, public logger::ILoggable {
  public:
   /**
    * @fn Battery
@@ -32,7 +34,7 @@ class Battery : public Component, public ILoggable {
    * @param [in] battery_resistance_Ohm: Battery internal resistance [Ohm]
    * @param [in] component_step_time_s: Component step time [sec]
    */
-  Battery(const int prescaler, ClockGenerator* clock_generator, int number_of_series, int number_of_parallel, double cell_capacity_Ah,
+  Battery(const int prescaler, environment::ClockGenerator* clock_generator, int number_of_series, int number_of_parallel, double cell_capacity_Ah,
           const std::vector<double> cell_discharge_curve_coefficients, double initial_dod, double cc_charge_c_rate, double cv_charge_voltage_V,
           double battery_resistance_Ohm, double component_step_time_s);
   /**
@@ -49,7 +51,7 @@ class Battery : public Component, public ILoggable {
    * @param [in] cv_charge_voltage_V: Constant charge voltage [V]
    * @param [in] battery_resistance_Ohm: Battery internal resistance [Ohm]
    */
-  Battery(ClockGenerator* clock_generator, int number_of_series, int number_of_parallel, double cell_capacity_Ah,
+  Battery(environment::ClockGenerator* clock_generator, int number_of_series, int number_of_parallel, double cell_capacity_Ah,
           const std::vector<double> cell_discharge_curve_coefficients, double initial_dod, double cc_charge_c_rate, double cv_charge_voltage_V,
           double battery_resistance_Ohm);
   /**
@@ -95,15 +97,27 @@ class Battery : public Component, public ILoggable {
    */
   inline double GetCvChargeVoltage_V() const { return cv_charge_voltage_V_; }
 
-  // Override ILoggable
+  /**
+   * @fn GetCellCapacity_Ah
+   * @brief Return cell capacity [Ah]
+   */
+  inline double GetCellCapacity_Ah() const { return cell_capacity_Ah_; }
+
+  /**
+   * @fn GetNumberOfParallel
+   * @brief Return number of parallel connected cells
+   */
+  inline int GetNumberOfParallel() const { return number_of_parallel_; }
+
+  // Override logger::ILoggable
   /**
    * @fn GetLogHeader
-   * @brief Override GetLogHeader function of ILoggable
+   * @brief Override GetLogHeader function of logger::ILoggable
    */
   std::string GetLogHeader() const override;
   /**
    * @fn GetLogValue
-   * @brief Override GetLogValue function of ILoggable
+   * @brief Override GetLogValue function of logger::ILoggable
    */
   std::string GetLogValue() const override;
 
@@ -133,5 +147,17 @@ class Battery : public Component, public ILoggable {
    */
   void UpdateBatVoltage();
 };
+
+/*
+ * @fn InitBAT
+ * @brief Initialize function of Battery
+ * @param [in] clock_generator: Clock generator
+ * @param [in] bat_id: Battery ID
+ * @param [in] file_name: Path to initialize file
+ * @param [in] component_step_time_s: Component step time [sec]
+ */
+Battery InitBAT(environment::ClockGenerator* clock_generator, int bat_id, const std::string file_name, double component_step_time_s);
+
+}  // namespace s2e::components
 
 #endif  // S2E_COMPONENTS_REAL_POWER_BATTERY_HPP_P_

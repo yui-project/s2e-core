@@ -6,11 +6,13 @@
 #include "sgp4_orbit_propagation.hpp"
 
 #include <iostream>
-#include <library/utilities/macros.hpp>
 #include <sstream>
+#include <utilities/macros.hpp>
 
-Sgp4OrbitPropagation::Sgp4OrbitPropagation(const CelestialInformation* celestial_information, char* tle1, char* tle2, const int wgs_setting,
-                                           const double current_time_jd)
+namespace s2e::dynamics::orbit {
+
+Sgp4OrbitPropagation::Sgp4OrbitPropagation(const environment::CelestialInformation* celestial_information, char* tle1, char* tle2,
+                                           const int wgs_setting, const double current_time_jd)
     : Orbit(celestial_information) {
   propagate_mode_ = OrbitPropagateMode::kSgp4;
 
@@ -26,6 +28,15 @@ Sgp4OrbitPropagation::Sgp4OrbitPropagation(const CelestialInformation* celestial
   double start_mfe, stop_mfe, delta_min;
 
   twoline2rv(tle1, tle2, type_run, type_input, gravity_constant_setting_, start_mfe, stop_mfe, delta_min, sgp4_data_);
+
+  // Epoch check
+  double epoch_difference_jday = (current_time_jd - sgp4_data_.jdsatepoch);
+  if (epoch_difference_jday < 0.0) {
+    std::cout << "[WARNING: SGP4] The TLE epoch is newer than the simulation start time." << std::endl;
+  } else if (epoch_difference_jday > 150.0) {
+    std::cout << "[WARNING: SGP4] The TLE epoch is 150 days older than the simulation start time." << std::endl;
+    std::cout << "                The orbit calculation result may have significant errors." << std::endl;
+  }
 
   spacecraft_acceleration_i_m_s2_ *= 0.0;
 
@@ -57,3 +68,5 @@ void Sgp4OrbitPropagation::Propagate(const double end_time_s, const double curre
   TransformEciToEcef();
   TransformEcefToGeodetic();
 }
+
+}  // namespace s2e::dynamics::orbit

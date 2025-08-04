@@ -1,7 +1,7 @@
 project(DISTURBANCE)
 cmake_minimum_required(VERSION 3.13)
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME} OBJECT
   air_drag.cpp
   disturbances.cpp
   geopotential.cpp
@@ -10,6 +10,6 @@ add_library(${PROJECT_NAME} STATIC
   solar_radiation_pressure_disturbance.cpp
   surface_force.cpp
   third_body_gravity.cpp
-  initialize_disturbances.cpp
+  lunar_gravity_field.cpp
 )
 include(../../common.cmake)

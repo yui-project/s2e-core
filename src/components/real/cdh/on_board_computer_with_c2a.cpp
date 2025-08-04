@@ -1,31 +1,47 @@
 /*
  * @file on_board_computer_with_c2a.cpp
  * @brief Class to emulate on board computer with C2A flight software
+ * @note Used C2A functions: TMGR_init, C2A_core_init, WDT_init, TMGR_clear, TMGR_count_up_master_clock, TDSP_execute_pl_as_task_list
  */
 
 #include "on_board_computer_with_c2a.hpp"
 
 #ifdef USE_C2A
+#include "src_core/c2a_core_main.h"
+
+#if !defined(C2A_CORE_VER_MAJOR)
+#warning "C2A_CORE_VER_MAJOR is not defined"   # this flag is defined after c2a-core v3.5.0
+#elif C2A_CORE_VER_MAJOR == 4
+// c2a-core v4
+#include "src_core/system/task_manager/task_dispatcher.h"
+#include "src_core/system/time_manager/time_manager.h"
+#include "src_core/system/watchdog_timer/watchdog_timer.h"
+#elif C2A_CORE_VER_MAJOR <= 3
+// c2a-core <= v3
 #include "src_core/System/TaskManager/task_dispatcher.h"
 #include "src_core/System/TimeManager/time_manager.h"
 #include "src_core/System/WatchdogTimer/watchdog_timer.h"
-#include "src_core/c2a_core_main.h"
-#endif
+#else
+#error "c2a-core version is not supported"
+#endif  // c2a-core version header
+#endif  // USE_C2A
+
+namespace s2e::components {
 
 std::map<int, UartPort*> ObcWithC2a::com_ports_c2a_;
 std::map<int, I2cPort*> ObcWithC2a::i2c_com_ports_c2a_;
 std::map<int, GpioPort*> ObcWithC2a::gpio_ports_c2a_;
 
-ObcWithC2a::ObcWithC2a(ClockGenerator* clock_generator) : OnBoardComputer(clock_generator), timing_regulator_(1) {
+ObcWithC2a::ObcWithC2a(environment::ClockGenerator* clock_generator) : OnBoardComputer(clock_generator), timing_regulator_(1) {
   // Initialize();
 }
 
-ObcWithC2a::ObcWithC2a(ClockGenerator* clock_generator, int timing_regulator)
+ObcWithC2a::ObcWithC2a(environment::ClockGenerator* clock_generator, int timing_regulator)
     : OnBoardComputer(clock_generator), timing_regulator_(timing_regulator) {
   // Initialize();
 }
 
-ObcWithC2a::ObcWithC2a(int prescaler, ClockGenerator* clock_generator, int timing_regulator, PowerPort* power_port)
+ObcWithC2a::ObcWithC2a(int prescaler, environment::ClockGenerator* clock_generator, int timing_regulator, PowerPort* power_port)
     : OnBoardComputer(prescaler, clock_generator, power_port), timing_regulator_(timing_regulator) {
   // Initialize();
 }
@@ -58,6 +74,9 @@ void ObcWithC2a::MainRoutine(const int time_count) {
                                    // 1msec
     TDSP_execute_pl_as_task_list();
   }
+#else
+  UNUSED(is_initialized);
+  UNUSED(timing_regulator_);
 #endif
 }
 
@@ -112,15 +131,6 @@ int ObcWithC2a::ReceivedByObc_C2A(int port_id, unsigned char* buffer, int offset
   UartPort* port = com_ports_c2a_[port_id];
   if (port == nullptr) return -1;
   return port->ReadRx(buffer, offset, length);
-}
-
-// If the character encoding of C2A is UTF-8, these functions are not necessary,
-// and users can directory use SendFromObc_C2A and ReceivedByObc_C2A
-int OBC_C2A_SendFromObc(int port_id, unsigned char* buffer, int offset, int length) {
-  return ObcWithC2a::SendFromObc_C2A(port_id, buffer, offset, length);
-}
-int OBC_C2A_ReceivedByObc(int port_id, unsigned char* buffer, int offset, int length) {
-  return ObcWithC2a::ReceivedByObc_C2A(port_id, buffer, offset, length);
 }
 
 int ObcWithC2a::I2cConnectPort(int port_id, const unsigned char i2c_address) {
@@ -193,16 +203,6 @@ int ObcWithC2a::I2cComponentReadCommand(int port_id, const unsigned char i2c_add
   return 0;
 }
 
-int OBC_C2A_I2cWriteCommand(int port_id, const unsigned char i2c_address, const unsigned char* data, const unsigned char length) {
-  return ObcWithC2a::I2cWriteCommand(port_id, i2c_address, data, length);
-}
-int OBC_C2A_I2cWriteRegister(int port_id, const unsigned char i2c_address, const unsigned char* data, const unsigned char length) {
-  return ObcWithC2a::I2cWriteRegister(port_id, i2c_address, data, length);
-}
-int OBC_C2A_I2cReadRegister(int port_id, const unsigned char i2c_address, unsigned char* data, const unsigned char length) {
-  return ObcWithC2a::I2cReadRegister(port_id, i2c_address, data, length);
-}
-
 int ObcWithC2a::GpioConnectPort(int port_id) {
   if (gpio_ports_c2a_[port_id] != nullptr) {
     // Port already used
@@ -236,6 +236,28 @@ bool ObcWithC2a::GpioRead_C2A(int port_id) {
   return port->DigitalRead();
 }
 
-int OBC_C2A_GpioWrite(int port_id, const bool is_high) { return ObcWithC2a::GpioWrite_C2A(port_id, is_high); }
+}  // namespace s2e::components
 
-bool OBC_C2A_GpioRead(int port_id) { return ObcWithC2a::GpioRead_C2A(port_id); }
+// C2A用
+// If the character encoding of C2A is UTF-8, these functions are not necessary,
+// and users can directory use SendFromObc_C2A and ReceivedByObc_C2A
+int OBC_C2A_SendFromObc(int port_id, unsigned char* buffer, int offset, int length) {
+  return s2e::components::ObcWithC2a::SendFromObc_C2A(port_id, buffer, offset, length);
+}
+int OBC_C2A_ReceivedByObc(int port_id, unsigned char* buffer, int offset, int length) {
+  return s2e::components::ObcWithC2a::ReceivedByObc_C2A(port_id, buffer, offset, length);
+}
+
+int OBC_C2A_I2cWriteCommand(int port_id, const unsigned char i2c_address, const unsigned char* data, const unsigned char length) {
+  return s2e::components::ObcWithC2a::I2cWriteCommand(port_id, i2c_address, data, length);
+}
+int OBC_C2A_I2cWriteRegister(int port_id, const unsigned char i2c_address, const unsigned char* data, const unsigned char length) {
+  return s2e::components::ObcWithC2a::I2cWriteRegister(port_id, i2c_address, data, length);
+}
+int OBC_C2A_I2cReadRegister(int port_id, const unsigned char i2c_address, unsigned char* data, const unsigned char length) {
+  return s2e::components::ObcWithC2a::I2cReadRegister(port_id, i2c_address, data, length);
+}
+
+int OBC_C2A_GpioWrite(int port_id, const bool is_high) { return s2e::components::ObcWithC2a::GpioWrite_C2A(port_id, is_high); }
+
+bool OBC_C2A_GpioRead(int port_id) { return s2e::components::ObcWithC2a::GpioRead_C2A(port_id); }

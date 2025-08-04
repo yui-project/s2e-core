@@ -3,14 +3,16 @@
  *@brief Class to calculate star direction with Hipparcos catalogue
  */
 
-#ifndef S2E_ENVIRONMENT_GLOBAL_HIPPAROCOS_CATALOGUE_HPP_
-#define S2E_ENVIRONMENT_GLOBAL_HIPPAROCOS_CATALOGUE_HPP_
+#ifndef S2E_ENVIRONMENT_GLOBAL_HIPPARCOS_CATALOGUE_HPP_
+#define S2E_ENVIRONMENT_GLOBAL_HIPPARCOS_CATALOGUE_HPP_
 
 #include <vector>
 
-#include "library/logger/loggable.hpp"
-#include "library/math/quaternion.hpp"
-#include "library/math/vector.hpp"
+#include "logger/loggable.hpp"
+#include "math_physics/math/quaternion.hpp"
+#include "math_physics/math/vector.hpp"
+
+namespace s2e::environment {
 
 /**
  *@struct HipparcosData
@@ -26,7 +28,7 @@ struct HipparcosData {
  *@class HipparcosCatalogue
  *@brief Class to calculate star direction with Hipparcos catalogue
  */
-class HipparcosCatalogue : public ILoggable {
+class HipparcosCatalogue : public logger::ILoggable {
  public:
   /**
    *@fn HipparcosCatalogue
@@ -52,54 +54,54 @@ class HipparcosCatalogue : public ILoggable {
    *@fn GetCatalogueSize
    *@brief Return read catalogue size
    */
-  int GetCatalogueSize() const { return hipparcos_catalogue_.size(); }
+  size_t GetCatalogueSize() const { return hipparcos_catalogue_.size(); }
   /**
    *@fn GetHipparcosId
    *@brief Return Hipparcos ID of a star
    *@param [in] rank: Rank of star magnitude in read catalogue
    */
-  int GetHipparcosId(int rank) const { return hipparcos_catalogue_[rank].hipparcos_id; }
+  int GetHipparcosId(size_t rank) const { return hipparcos_catalogue_[rank].hipparcos_id; }
   /**
    *@fn GetVisibleMagnitude
    *@brief Return magnitude in visible wave length of a star
    *@param [in] rank: Rank of star magnitude in read catalogue
    */
-  double GetVisibleMagnitude(int rank) const { return hipparcos_catalogue_[rank].visible_magnitude; }
+  double GetVisibleMagnitude(size_t rank) const { return hipparcos_catalogue_[rank].visible_magnitude; }
   /**
    *@fn GetRightAscension_deg
    *@brief Return right ascension of a star
    *@param [in] rank: Rank of star magnitude in read catalogue
    */
-  double GetRightAscension_deg(int rank) const { return hipparcos_catalogue_[rank].right_ascension_deg; }
+  double GetRightAscension_deg(size_t rank) const { return hipparcos_catalogue_[rank].right_ascension_deg; }
   /**
    *@fn GetDeclination_deg
    *@brief Return declination of a star
    *@param [in] rank: Rank of star magnitude in read catalogue
    */
-  double GetDeclination_deg(int rank) const { return hipparcos_catalogue_[rank].declination_deg; }
+  double GetDeclination_deg(size_t rank) const { return hipparcos_catalogue_[rank].declination_deg; }
   /**
    *@fn GetStarDir_i
    *@brief Return direction vector of a star in the inertial frame
    *@param [in] rank: Rank of star magnitude in read catalogue
    */
-  libra::Vector<3> GetStarDirection_i(int rank) const;
+  math::Vector<3> GetStarDirection_i(size_t rank) const;
   /**
    *@fn GetStarDir_b
    *@brief Return direction vector of a star in the body-fixed frame
    *@param [in] rank: Rank of star magnitude in read catalogue
    *@param [in] quaternion_i2b: Quaternion from the inertial frame to the body-fixed frame
    */
-  libra::Vector<3> GetStarDirection_b(int rank, libra::Quaternion quaternion_i2b) const;
+  math::Vector<3> GetStarDirection_b(size_t rank, math::Quaternion quaternion_i2b) const;
 
-  // Override ILoggable
+  // Override logger::ILoggable
   /**
    * @fn GetLogHeader
-   * @brief Override GetLogHeader function of ILoggable
+   * @brief Override GetLogHeader function of logger::ILoggable
    */
   virtual std::string GetLogHeader() const;
   /**
    * @fn GetLogValue
-   * @brief Override GetLogValue function of ILoggable
+   * @brief Override GetLogValue function of logger::ILoggable
    */
   virtual std::string GetLogValue() const;
 
@@ -111,4 +113,13 @@ class HipparcosCatalogue : public ILoggable {
   std::string catalogue_path_;                      //!< Path to Hipparcos catalog file
 };
 
-#endif  // S2E_ENVIRONMENT_GLOBAL_HIPPAROCOS_CATALOGUE_HPP_
+/**
+ *@fn InitHipparcosCatalogue
+ *@brief Initialize function for HipparcosCatalogue class
+ *@param [in] file_name: Path to the initialize function
+ */
+HipparcosCatalogue* InitHipparcosCatalogue(std::string file_name);
+
+}  // namespace s2e::environment
+
+#endif  // S2E_ENVIRONMENT_GLOBAL_HIPPARCOS_CATALOGUE_HPP_

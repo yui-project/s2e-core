@@ -5,11 +5,16 @@
 
 #include "antenna.hpp"
 
-#include <cmath>
-#include <library/utilities/macros.hpp>
+#include <string.h>
 
-Antenna::Antenna(const int component_id, const libra::Quaternion& quaternion_b2c, const bool is_transmitter, const bool is_receiver,
-                 const double frequency_MHz, const Vector<5> tx_parameters, const Vector<4> rx_parameters)
+#include <cmath>
+#include <setting_file_reader/initialize_file_access.hpp>
+#include <utilities/macros.hpp>
+
+namespace s2e::components {
+
+Antenna::Antenna(const int component_id, const math::Quaternion& quaternion_b2c, const bool is_transmitter, const bool is_receiver,
+                 const double frequency_MHz, const math::Vector<5> tx_parameters, const math::Vector<4> rx_parameters)
     : component_id_(component_id), is_transmitter_(is_transmitter), is_receiver_(is_receiver), frequency_MHz_(frequency_MHz) {
   quaternion_b2c_ = quaternion_b2c;
 
@@ -42,7 +47,7 @@ Antenna::Antenna(const int component_id, const libra::Quaternion& quaternion_b2c
   }
 }
 
-Antenna::Antenna(const int component_id, const libra::Quaternion& quaternion_b2c, const bool is_transmitter, const bool is_receiver,
+Antenna::Antenna(const int component_id, const math::Quaternion& quaternion_b2c, const bool is_transmitter, const bool is_receiver,
                  const double frequency_MHz, const double tx_bitrate_bps, const double tx_output_power_W, const AntennaParameters tx_parameters,
                  const double rx_system_noise_temperature_K, const AntennaParameters rx_parameters)
     : component_id_(component_id),
@@ -101,3 +106,65 @@ AntennaGainModel SetAntennaGainModel(const std::string gain_model_name) {
     return AntennaGainModel::kIsotropic;
   }
 }
+
+Antenna InitAntenna(const int antenna_id, const std::string file_name) {
+  setting_file_reader::IniAccess antenna_conf(file_name);
+
+  const std::string section_name = "ANTENNA_" + std::to_string(static_cast<long long>(antenna_id));
+
+  math::Quaternion quaternion_b2c;
+  antenna_conf.ReadQuaternion(section_name.c_str(), "quaternion_b2c", quaternion_b2c);
+
+  bool is_transmitter = antenna_conf.ReadBoolean(section_name.c_str(), "is_transmitter");
+  bool is_receiver = antenna_conf.ReadBoolean(section_name.c_str(), "is_receiver");
+  double frequency_MHz = antenna_conf.ReadDouble(section_name.c_str(), "frequency_MHz");
+
+  double tx_bitrate_bps = antenna_conf.ReadDouble(section_name.c_str(), "tx_bitrate_bps");
+  double tx_output_power_W = antenna_conf.ReadDouble(section_name.c_str(), "tx_output_W");
+  double rx_system_noise_temperature_K = antenna_conf.ReadDouble(section_name.c_str(), "rx_system_noise_temperature_K");
+
+  AntennaParameters tx_parameters;
+  if (is_transmitter) {
+    tx_parameters.gain_dBi_ = antenna_conf.ReadDouble(section_name.c_str(), "tx_gain_dBi");
+    tx_parameters.loss_feeder_dB_ = antenna_conf.ReadDouble(section_name.c_str(), "tx_loss_feeder_dB");
+    tx_parameters.loss_pointing_dB_ = antenna_conf.ReadDouble(section_name.c_str(), "tx_loss_pointing_dB");
+    tx_parameters.antenna_gain_model = SetAntennaGainModel(antenna_conf.ReadString(section_name.c_str(), "tx_antenna_gain_model"));
+    size_t length_theta = antenna_conf.ReadInt(section_name.c_str(), "tx_length_theta");
+    size_t length_phi = antenna_conf.ReadInt(section_name.c_str(), "tx_length_phi");
+    double theta_max_rad = antenna_conf.ReadDouble(section_name.c_str(), "tx_theta_max_rad");
+    double phi_max_rad = antenna_conf.ReadDouble(section_name.c_str(), "tx_phi_max_rad");
+    tx_parameters.radiation_pattern = AntennaRadiationPattern(antenna_conf.ReadString(section_name.c_str(), "tx_antenna_radiation_pattern_file"),
+                                                              length_theta, length_phi, theta_max_rad, phi_max_rad);
+  } else {
+    tx_parameters.gain_dBi_ = 0.0;
+    tx_parameters.loss_feeder_dB_ = 0.0;
+    tx_parameters.loss_pointing_dB_ = 0.0;
+    tx_parameters.antenna_gain_model = AntennaGainModel::kIsotropic;
+  }
+
+  AntennaParameters rx_parameters;
+  if (is_receiver) {
+    rx_parameters.gain_dBi_ = antenna_conf.ReadDouble(section_name.c_str(), "rx_gain_dBi");
+    rx_parameters.loss_feeder_dB_ = antenna_conf.ReadDouble(section_name.c_str(), "rx_loss_feeder_dB");
+    rx_parameters.loss_pointing_dB_ = antenna_conf.ReadDouble(section_name.c_str(), "rx_loss_pointing_dB");
+    rx_parameters.antenna_gain_model = SetAntennaGainModel(antenna_conf.ReadString(section_name.c_str(), "rx_antenna_gain_model"));
+    rx_parameters.radiation_pattern = AntennaRadiationPattern(antenna_conf.ReadString(section_name.c_str(), "rx_antenna_radiation_pattern_file"));
+    size_t length_theta = antenna_conf.ReadInt(section_name.c_str(), "rx_length_theta");
+    size_t length_phi = antenna_conf.ReadInt(section_name.c_str(), "rx_length_phi");
+    double theta_max_rad = antenna_conf.ReadDouble(section_name.c_str(), "rx_theta_max_rad");
+    double phi_max_rad = antenna_conf.ReadDouble(section_name.c_str(), "rx_phi_max_rad");
+    rx_parameters.radiation_pattern = AntennaRadiationPattern(antenna_conf.ReadString(section_name.c_str(), "rx_antenna_radiation_pattern_file"),
+                                                              length_theta, length_phi, theta_max_rad, phi_max_rad);
+  } else {
+    rx_parameters.gain_dBi_ = 0.0;
+    rx_parameters.loss_feeder_dB_ = 0.0;
+    rx_parameters.loss_pointing_dB_ = 0.0;
+    rx_parameters.antenna_gain_model = AntennaGainModel::kIsotropic;
+  }
+
+  Antenna antenna(antenna_id, quaternion_b2c, is_transmitter, is_receiver, frequency_MHz, tx_bitrate_bps, tx_output_power_W, tx_parameters,
+                  rx_system_noise_temperature_K, rx_parameters);
+  return antenna;
+}
+
+}  // namespace s2e::components

@@ -9,11 +9,13 @@
 #include "environment/global/physical_constants.hpp"
 #include "environment/local/local_celestial_information.hpp"
 
+namespace s2e::environment {
+
 /**
  * @class SolarRadiationPressureEnvironment
  * @brief Class to calculate Solar Radiation Pressure
  */
-class SolarRadiationPressureEnvironment : public ILoggable {
+class SolarRadiationPressureEnvironment : public logger::ILoggable {
  public:
   bool IsCalcEnabled = true;  //!< Calculation flag
 
@@ -23,6 +25,7 @@ class SolarRadiationPressureEnvironment : public ILoggable {
    * @param [in] local_celestial_information: Local celestial information
    */
   SolarRadiationPressureEnvironment(LocalCelestialInformation* local_celestial_information);
+
   /**
    * @fn ~SolarRadiationPressureEnvironment
    * @brief Destructor
@@ -34,6 +37,16 @@ class SolarRadiationPressureEnvironment : public ILoggable {
    * @brief Update pressure and shadow coefficients
    */
   void UpdateAllStates();
+
+  /**
+   * @fn AddShadowSource
+   * @brief Update pressure and shadow coefficients
+   * @param [in] shadow_source_name: Shadow source name
+   */
+  void AddShadowSource(const std::string shadow_source_name) {
+    // TODO: Add assertion
+    shadow_source_name_list_.push_back(shadow_source_name);
+  }
 
   // Getter
   /**
@@ -67,24 +80,24 @@ class SolarRadiationPressureEnvironment : public ILoggable {
    */
   inline bool GetIsEclipsed() const { return (shadow_coefficient_ >= 1.0 ? false : true); }
 
-  // Override ILoggable
+  // Override logger::ILoggable
   /**
    * @fn GetLogHeader
-   * @brief Override GetLogHeader function of ILoggable
+   * @brief Override GetLogHeader function of logger::ILoggable
    */
   virtual std::string GetLogHeader() const;
   /**
    * @fn GetLogValue
-   * @brief Override GetLogValue function of ILoggable
+   * @brief Override GetLogValue function of logger::ILoggable
    */
   virtual std::string GetLogValue() const;
 
  private:
-  double solar_radiation_pressure_N_m2_;  //!< Solar radiation pressure [N/m^2]
-  double solar_constant_W_m2_ = 1366.0;   //!< Solar constant [W/m^2] TODO: We need to change the value depends on sun activity.
-  double shadow_coefficient_ = 1.0;       //!< Shadow function
-  double sun_radius_m_;                   //!< Sun radius [m]
-  std::string shadow_source_name_;        //!< Shadow source name
+  double solar_radiation_pressure_N_m2_;              //!< Solar radiation pressure [N/m^2]
+  double solar_constant_W_m2_ = 1366.0;               //!< Solar constant [W/m^2] TODO: We need to change the value depends on sun activity.
+  double shadow_coefficient_ = 1.0;                   //!< Shadow function
+  double sun_radius_m_;                               //!< Sun radius [m]
+  std::vector<std::string> shadow_source_name_list_;  //!< Shadow source name list
 
   LocalCelestialInformation* local_celestial_information_;  //!< Local celestial information
 
@@ -101,5 +114,16 @@ class SolarRadiationPressureEnvironment : public ILoggable {
    */
   void CalcShadowCoefficient(std::string shadow_source_name);
 };
+
+/**
+ * @fn InitSolarRadiationPressureEnvironment
+ * @brief Initialize solar radiation pressure
+ * @param [in] initialize_file_path: Path to initialize file
+ * @param [in] local_celestial_information: Local celestial information
+ */
+SolarRadiationPressureEnvironment InitSolarRadiationPressureEnvironment(std::string initialize_file_path,
+                                                                        LocalCelestialInformation* local_celestial_information);
+
+}  // namespace s2e::environment
 
 #endif  // S2E_ENVIRONMENT_LOCAL_SOLAR_RADIATION_PRESSURE_ENVIRONMENT_HPP_

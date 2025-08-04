@@ -7,16 +7,24 @@
 #ifndef S2E_ENVIRONMENT_GLOBAL_CELESTIAL_INFORMATION_HPP_
 #define S2E_ENVIRONMENT_GLOBAL_CELESTIAL_INFORMATION_HPP_
 
-#include "celestial_rotation.hpp"
-#include "library/logger/loggable.hpp"
-#include "library/math/vector.hpp"
+#include <vector>
+
+#include "earth_rotation.hpp"
+#include "logger/loggable.hpp"
+#include "math_physics/math/vector.hpp"
+#include "moon_rotation.hpp"
+#include "simulation_time.hpp"
+
+namespace s2e::environment {
+
+class MoonRotation;
 
 /**
  * @class CelestialInformation
  * @brief Class to manage the information related with the celestial bodies
  * @details This class uses SPICE to get the information of celestial bodies
  */
-class CelestialInformation : public ILoggable {
+class CelestialInformation : public logger::ILoggable {
  public:
   /**
    * @fn CelestialInformation
@@ -24,12 +32,12 @@ class CelestialInformation : public ILoggable {
    * @param [in] inertial_frame_name:  Definition of inertial frame
    * @param [in] aberration_correction_setting: Stellar aberration correction
    * @param [in] center_body_name: Center body name of inertial frame
-   * @param [in] rotation_mode: Designation of rotation model
    * @param [in] number_of_selected_body: Number of selected body
    * @param [in] selected_body_ids: SPICE IDs of selected bodies
+   * @param [in] rotation_mode_list: Rotation mode list for planets
    */
   CelestialInformation(const std::string inertial_frame_name, const std::string aberration_correction_setting, const std::string center_body_name,
-                       const RotationMode rotation_mode, const unsigned int number_of_selected_body, int* selected_body_ids);
+                       const unsigned int number_of_selected_body, int* selected_body_ids, const std::vector<std::string> rotation_mode_list);
   /**
    * @fn CelestialInformation
    * @brief Copy constructor
@@ -41,24 +49,24 @@ class CelestialInformation : public ILoggable {
    */
   virtual ~CelestialInformation();
 
-  // Override ILoggable
+  // Override logger::ILoggable
   /**
    * @fn GetLogHeader
-   * @brief Override GetLogHeader function of ILoggable
+   * @brief Override GetLogHeader function of logger::ILoggable
    */
   virtual std::string GetLogHeader() const;
   /**
    * @fn GetLogValue
-   * @brief Override GetLogValue function of ILoggable
+   * @brief Override GetLogValue function of logger::ILoggable
    */
   virtual std::string GetLogValue() const;
 
   /**
    * @fn UpdateAllObjectsInformation
    * @brief Update the information of all selected celestial objects
-   * @param [in] current_time_jd: Current time [Julian day]
+   * @param [in] simulation_time: Simulation Time information
    */
-  void UpdateAllObjectsInformation(const double current_time_jd);
+  void UpdateAllObjectsInformation(const SimulationTime& simulation_time);
 
   // Getters
   // Orbit information
@@ -67,8 +75,8 @@ class CelestialInformation : public ILoggable {
    * @brief Return position from the center body in the inertial frame [m]
    * @param [in] id: ID of CelestialInformation list
    */
-  inline libra::Vector<3> GetPositionFromCenter_i_m(const unsigned int id) const {
-    libra::Vector<3> pos(0.0);
+  inline math::Vector<3> GetPositionFromCenter_i_m(const unsigned int id) const {
+    math::Vector<3> pos(0.0);
     if (id > number_of_selected_bodies_) return pos;
     for (int i = 0; i < 3; i++) pos[i] = celestial_body_position_from_center_i_m_[id * 3 + i];
     return pos;
@@ -78,9 +86,23 @@ class CelestialInformation : public ILoggable {
    * @brief Return position from the center body in the inertial frame [m]
    * @param [in] body_name: Name of the body defined in the SPICE
    */
-  inline libra::Vector<3> GetPositionFromCenter_i_m(const char* body_name) const {
+  inline math::Vector<3> GetPositionFromCenter_i_m(const char* body_name) const {
     int id = CalcBodyIdFromName(body_name);
     return GetPositionFromCenter_i_m(id);
+  }
+  /**
+   * @fn GetPositionFromSelectedBody_i_m
+   * @brief Return position from the selected reference body in the inertial frame [m]
+   * @param [in] target_body_name: Name of the target body defined in the SPICE
+   * @param [in] reference_body_name: Name of the reference body defined in the SPICE
+   */
+  inline math::Vector<3> GetPositionFromSelectedBody_i_m(const char* target_body_name, const char* reference_body_name) const {
+    int target_id = CalcBodyIdFromName(target_body_name);
+    math::Vector<3> target_body_position_i_m = GetPositionFromCenter_i_m(target_id);
+    int reference_id = CalcBodyIdFromName(reference_body_name);
+    math::Vector<3> reference_body_position_i_m = GetPositionFromCenter_i_m(reference_id);
+
+    return target_body_position_i_m - reference_body_position_i_m;
   }
 
   /**
@@ -88,8 +110,8 @@ class CelestialInformation : public ILoggable {
    * @brief Return velocity from the center body in the inertial frame [m/s]
    * @param [in] id: ID of CelestialInformation list
    */
-  inline libra::Vector<3> GetVelocityFromCenter_i_m_s(const unsigned int id) const {
-    libra::Vector<3> vel(0.0);
+  inline math::Vector<3> GetVelocityFromCenter_i_m_s(const unsigned int id) const {
+    math::Vector<3> vel(0.0);
     if (id > number_of_selected_bodies_) return vel;
     for (int i = 0; i < 3; i++) vel[i] = celestial_body_velocity_from_center_i_m_s_[id * 3 + i];
     return vel;
@@ -99,9 +121,23 @@ class CelestialInformation : public ILoggable {
    * @brief Return velocity from the center body in the inertial frame [m/s]
    * @param [in] body_name: Name of the body defined in the SPICE
    */
-  inline libra::Vector<3> GetVelocityFromCenter_i_m_s(const char* body_name) const {
+  inline math::Vector<3> GetVelocityFromCenter_i_m_s(const char* body_name) const {
     int id = CalcBodyIdFromName(body_name);
     return GetVelocityFromCenter_i_m_s(id);
+  }
+  /**
+   * @fn GetVelocityFromSelectedBody_i_m_s
+   * @brief Return position from the selected reference body in the inertial frame [m]
+   * @param [in] target_body_name: Name of the target body defined in the SPICE
+   * @param [in] reference_body_name: Name of the reference body defined in the SPICE
+   */
+  inline math::Vector<3> GetVelocityFromSelectedBody_i_m_s(const char* target_body_name, const char* reference_body_name) const {
+    int target_id = CalcBodyIdFromName(target_body_name);
+    math::Vector<3> target_body_velocity_i_m_s = GetVelocityFromCenter_i_m_s(target_id);
+    int reference_id = CalcBodyIdFromName(reference_body_name);
+    math::Vector<3> reference_body_velocity_i_m_s = GetVelocityFromCenter_i_m_s(reference_id);
+
+    return target_body_velocity_i_m_s - reference_body_velocity_i_m_s;
   }
 
   // Gravity constants
@@ -126,8 +162,8 @@ class CelestialInformation : public ILoggable {
    * @brief Return 3 axis planetographic radii of a celestial body [m]
    * @param [in] id: ID of CelestialInformation list
    */
-  inline libra::Vector<3> GetRadii_m(const unsigned int id) const {
-    libra::Vector<3> radii(0.0);
+  inline math::Vector<3> GetRadii_m(const unsigned int id) const {
+    math::Vector<3> radii(0.0);
     if (id > number_of_selected_bodies_) return radii;
     for (int i = 0; i < 3; i++) radii[i] = celestial_body_planetographic_radii_m_[id * 3 + i];
     return radii;
@@ -137,7 +173,7 @@ class CelestialInformation : public ILoggable {
    * @brief Return 3 axis planetographic radii of a celestial body [m]
    * @param [in] body_name: Name of the body defined in the SPICE
    */
-  inline libra::Vector<3> GetRadiiFromName_m(const char* body_name) const {
+  inline math::Vector<3> GetRadiiFromName_m(const char* body_name) const {
     int id = CalcBodyIdFromName(body_name);
     return GetRadii_m(id);
   }
@@ -173,7 +209,12 @@ class CelestialInformation : public ILoggable {
    * @fn GetEarthRotation
    * @brief Return EarthRotation information
    */
-  inline CelestialRotation GetEarthRotation(void) const { return *earth_rotation_; };
+  inline EarthRotation& GetEarthRotation(void) const { return *earth_rotation_; };
+  /**
+   * @fn GetMoonRotation
+   * @brief Return MoonRotation information
+   */
+  inline MoonRotation& GetMoonRotation(void) const { return *moon_rotation_; };
 
   // Calculation
   /**
@@ -209,8 +250,9 @@ class CelestialInformation : public ILoggable {
                                                        // Y-axis equal to the cross product of the unit Z-axis and X-axis vectors
 
   // Rotational Motion of each planets
-  CelestialRotation* earth_rotation_;  //!< Instance of Earth rotation
-  RotationMode rotation_mode_;         //!< Designation of rotation model
+  EarthRotation* earth_rotation_;                //!< Instance of Earth rotation
+  MoonRotation* moon_rotation_;                  //!< Instance of Moon rotation
+  std::vector<std::string> rotation_mode_list_;  //!< Rotation mode list for planets
 
   /**
    * @fn GetPlanetOrbit
@@ -221,6 +263,26 @@ class CelestialInformation : public ILoggable {
    * @param [out] orbit: Cartesian state vector representing the position and velocity of the target body relative to the specified observer.
    */
   void GetPlanetOrbit(const char* planet_name, const double et, double orbit[6]);
+
+  /**
+   * @fn GetRotationMode
+   * @brief Return rotation mode
+   * @param [in] body_name: Name of the body defined in the SPICE
+   */
+  inline std::string GetRotationMode(const char* body_name) const {
+    size_t id = CalcBodyIdFromName(body_name);
+    if (id >= number_of_selected_bodies_) return "Idle";
+    return rotation_mode_list_[id];
+  }
 };
+
+/**
+ *@fn InitCelestialInfo
+ *@brief Initialize function for CelestialInformation class
+ *@param [in] file_name: Path to the initialize function
+ */
+CelestialInformation* InitCelestialInformation(std::string file_name);
+
+}  // namespace s2e::environment
 
 #endif  // S2E_ENVIRONMENT_GLOBAL_CELESTIAL_INFORMATION_HPP_

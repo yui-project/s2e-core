@@ -24,13 +24,13 @@ jobs:
         compiler: ['gcc-11 g++-11', 'clang clang++']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4.2.2
 
       - name: checkout the submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.2.2
         with:
           submodules: recursive
-      
+
       - name: set compiler
         id: compiler
         run: |
@@ -61,7 +61,7 @@ jobs:
 
       - name: cache extlib
         id: cache-extlib
-        uses: actions/cache@v3
+        uses: actions/cache@v4.2.3
         with:
           key: extlib-${{ runner.os }}-${{ hashFiles('./ExtLibraries/**') }}}
           path: ExtLibraries
@@ -85,18 +85,19 @@ jobs:
           ls cspice/include
           ls cspice/generic_kernels
           ls nrlmsise00
-          ls nrlmsise00/table
           ls nrlmsise00/lib*
           ls nrlmsise00/lib*/libnrlmsise00.a
           ls nrlmsise00/src
 
-      - name: build
+      - name: build example
         env:
           CC:  ${{ steps.compiler.outputs.CC  }}
           CXX: ${{ steps.compiler.outputs.CXX }}
+        working-directory: ./example
         run: |
-          cmake . -DEXT_LIB_DIR=./ExtLibraries -DBUILD_64BIT=ON -DGOOGLE_TEST=ON
+          cmake . -DEXT_LIB_DIR=../ExtLibraries -DBUILD_64BIT=ON -DGOOGLE_TEST=ON -DCORE_DIR_FROM_EXE=../s2e-core
           cmake --build .
 
       - name: run test
+        working-directory: ./example
         run: ./S2E_TEST
