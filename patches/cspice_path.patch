@@ -1,0 +1,13 @@
+diff --git a/scripts/Docker_Ubuntu/download_cspice_Linux_gcc.sh b/scripts/Docker_Ubuntu/download_cspice_Linux_gcc.sh
+index e665fa72..80789552 100755
+--- a/scripts/Docker_Ubuntu/download_cspice_Linux_gcc.sh
++++ b/scripts/Docker_Ubuntu/download_cspice_Linux_gcc.sh
+@@ -2,7 +2,7 @@
+ cd `dirname $0`
+ 
+ # set variables
+-DIR_CSPICE=../../../ExtLibraries/cspice
++DIR_CSPICE=../../ExtLibraries/cspice
+ DIR_TMP=./tmp
+ URL_CSPICE=https://naif.jpl.nasa.gov/pub/naif/toolkit/C/PC_Linux_GCC_32bit/packages/
+ URL_KERNEL=https://naif.jpl.nasa.gov/pub/naif/generic_kernels/
