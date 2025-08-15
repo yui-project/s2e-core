@@ -1,0 +1,13 @@
+diff --git a/scripts/Common/download_EGM96coefficients.sh b/scripts/Common/download_EGM96coefficients.sh
+index 81595eb9..322acf67 100755
+--- a/scripts/Common/download_EGM96coefficients.sh
++++ b/scripts/Common/download_EGM96coefficients.sh
+@@ -2,7 +2,7 @@
+ cd `dirname $0`
+ 
+ #set variables
+-DIR_GEOPOTENTIAL=../../../ExtLibraries/GeoPotential
++DIR_GEOPOTENTIAL=../../ExtLibraries/GeoPotential
+ 
+ mkdir -p $DIR_GEOPOTENTIAL
+ 

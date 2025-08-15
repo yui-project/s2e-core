@@ -1,0 +1,13 @@
+diff --git a/scripts/Common/download_nrlmsise00_src_and_table.sh b/scripts/Common/download_nrlmsise00_src_and_table.sh
+index a92ffd3b..e30e68bb 100755
+--- a/scripts/Common/download_nrlmsise00_src_and_table.sh
++++ b/scripts/Common/download_nrlmsise00_src_and_table.sh
+@@ -2,7 +2,7 @@
+ cd `dirname $0`
+ 
+ #set variables
+-DIR_NRLMSISE00=../../../ExtLibraries/nrlmsise00/
++DIR_NRLMSISE00=../../ExtLibraries/nrlmsise00/
+ URL_NRLMSISE00=git://git.linta.de/~brodo/nrlmsise-00.git
+ URL_TABLE=ftp://ftp.agi.com/pub/DynamicEarthData/SpaceWeather-v1.2.txt
+ 
