@@ -6,15 +6,18 @@ PWD=$(pwd)
 execute_scripts() {
    # patching the path to cspice directory
     git apply patches/cspice_path.patch
-
+    git apply patches/egm96_path.patch
+    git apply patches/nrlmsise00_path.patch
 
     # execute the scripts
-
-    bash scripts/Common/download_EGM96coefficients.sh
-    bash scripts/Common/download_HIPcatalogue.sh
-    bash scripts/Common/download_nrlmsise00_src_and_table.sh
-    bash scripts/Docker_Ubuntu/download_cspice_Linux_gcc.sh
+    cd scripts/Common
+    bash download_EGM96coefficients.sh
+    bash download_HIPcatalogue.sh
+    bash download_nrlmsise00_src_and_table.sh
+    cd ../Docker_Ubuntu
+    bash download_cspice_Linux_gcc.sh
     # copy the sample settings folder to the root dir
+    cd ../../
 
     cp -r example/settings/. settings/
     cp -r ExtLibraries/cspice/. settings/environment/cspice/
