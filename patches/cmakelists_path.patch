@@ -1,0 +1,13 @@
+diff --git a/example/CMakeLists.txt b/example/CMakeLists.txt
+index 17caef33..cd7618fd 100644
+--- a/example/CMakeLists.txt
++++ b/example/CMakeLists.txt
+@@ -31,7 +31,7 @@ if(NOT DEFINED S2E_CORE_DIR)
+   set(S2E_CORE_DIR ${CMAKE_CURRENT_LIST_DIR}/../)
+ endif()
+ if(NOT DEFINED EXT_LIB_DIR)
+-  set(EXT_LIB_DIR ${CMAKE_CURRENT_LIST_DIR}/../../ExtLibraries)
++  set(EXT_LIB_DIR ${CMAKE_CURRENT_LIST_DIR}/../ExtLibraries)
+ endif()
+ set(CSPICE_DIR ${EXT_LIB_DIR}/cspice)
+ set(NRLMSISE00_DIR ${EXT_LIB_DIR}/nrlmsise00)
