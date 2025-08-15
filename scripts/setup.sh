@@ -4,8 +4,13 @@
 PWD=$(pwd)
 
 execute_scripts() {
+    cd ../
+    git apply patches/cspice_path.patch
+    git apply patches/egm96_path.patch
+    git apply patches/nrlmsise00_path.patch
+    git apply patches/cmakelists_path.patch
     # execute the scripts
-    cd ../scripts/Common
+    cd scripts/Common
     bash download_EGM96coefficients.sh
     bash download_HIPcatalogue.sh
     bash download_nrlmsise00_src_and_table.sh
@@ -13,6 +18,11 @@ execute_scripts() {
     bash download_cspice_Linux_gcc.sh
     # copy the sample settings folder to the root dir
     cd ../../
+
+    git apply patches/cspice_path.patch --reverse
+    git apply patches/egm96_path.patch --reverse
+    git apply patches/nrlmsise00_path.patch --reverse
+
 
     cp -r example/settings/. settings/
     cp -r ExtLibraries/cspice/. settings/environment/cspice/
