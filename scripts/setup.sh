@@ -22,6 +22,7 @@ execute_scripts() {
     git apply patches/cspice_path.patch --reverse
     git apply patches/egm96_path.patch --reverse
     git apply patches/nrlmsise00_path.patch --reverse
+    git apply patches/cmakelists_path.patch --reverse
 
 
     cp -r example/settings/. settings/
